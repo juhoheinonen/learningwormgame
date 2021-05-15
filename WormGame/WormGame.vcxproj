@@ -78,8 +78,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files\SDL2-2.0.14\lib\x64;$(IncludePath);$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Program Files\SDL2_ttf-2.0.15\include;C:\Program Files\SDL2-2.0.14\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files\SDL2_ttf-2.0.15\lib\x64;C:\Program Files\SDL2-2.0.14\lib\x64;$(IncludePath);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -122,7 +122,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2Main.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2Main.lib;SDL2_ttf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,6 +143,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="WormGame.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="Px437_IBM_VGA_8x16-2x.ttf">
+      <DeploymentContent>true</DeploymentContent>
+    </Font>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

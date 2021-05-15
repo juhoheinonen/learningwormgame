@@ -1,7 +1,10 @@
 #include <SDL.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <time.h>
+#include <SDL_ttf.h>
+#include <SDL_render.h>
 
 bool init();
 void drawWindow();
@@ -14,6 +17,7 @@ void updateGrid(struct Worm);
 void closeSdl();
 int worm_getLength(struct Worm);
 void showEndTextAndEnd();
+bool gGameOver;
 
 enum PixelDimensions { SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
@@ -58,14 +62,17 @@ SDL_Surface* gScreenSurface = NULL;
 
 SDL_Surface* gHelloWorld = NULL;
 
+SDL_Renderer* gRenderer = NULL;
+
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
 
 int main()
 {
 	if (!init()) {
 		printf("Failed to initialize!\n");
-	}
+	}	
 
+	gGameOver = false;
 	backgroundColor.red = 0;
 	backgroundColor.green = 0;
 	backgroundColor.blue = 0;
@@ -107,9 +114,11 @@ int main()
 
 	while (!quit) {
 		SDL_Delay(20);
-		worm_updateLocation(&worm);
-		updateGrid(worm);
-		drawWindow();
+		if (!gGameOver) {
+			worm_updateLocation(&worm);
+			updateGrid(worm);
+			drawWindow();
+		}
 
 		while (SDL_PollEvent(&e) != 0)
 		{
@@ -245,6 +254,9 @@ bool init() {
 		}
 		else {
 			gScreenSurface = SDL_GetWindowSurface(gWindow);
+
+			gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
+
 			return true;
 		}
 	}
@@ -293,5 +305,44 @@ int worm_getLength(struct Worm worm)
 
 void showEndTextAndEnd()
 {
-	
+	if (TTF_Init() >= 0) {
+		//this opens a font style and sets a size
+		TTF_Font* Sans = TTF_OpenFont("Px437_IBM_VGA_8x16-2x.ttf", 24);
+
+		// this is the color in rgb format,
+		// maxing out all would give you the color white,
+		// and it will be your text's color
+		SDL_Color White = { 255, 255, 255 };
+
+		// as TTF_RenderText_Solid could only be used on
+		// SDL_Surface then you have to create the surface first
+		SDL_Surface* surfaceMessage =
+			TTF_RenderText_Solid(Sans, "Game over. Thanks for playing!", White);
+
+		// now you can convert it into a texture
+		SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
+
+		SDL_Rect Message_rect; //create a rect
+		Message_rect.x = 50;  //controls the rect's x coordinate 
+		Message_rect.y = 50; // controls the rect's y coordinte
+		Message_rect.w = 100; // controls the width of the rect
+		Message_rect.h = 100; // controls the height of the rect
+
+		// (0,0) is on the top left of the window/screen,
+		// think a rect as the text's box,
+		// that way it would be very simple to understand
+
+		// Now since it's a texture, you have to put RenderCopy
+		// in your game loop area, the area where the whole code executes
+
+		// you put the renderer's name first, the Message,
+		// the crop size (you can ignore this if you don't want
+		// to dabble with cropping), and the rect which is the size
+		// and coordinate of your texture
+		SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
+
+		// Don't forget to free your surface and texture
+		SDL_FreeSurface(surfaceMessage);
+		SDL_DestroyTexture(Message);
+	}	
 }
