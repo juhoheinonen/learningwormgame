@@ -111,13 +111,12 @@ int main()
 			updateGrid(worm);
 			drawWindow();
 		}
+		if (gGameOver) {
+			showEndImageAndSetGameOver();
+		}
 
 		while (SDL_PollEvent(&e) != 0)
-		{
-			if (gGameOver) {
-				showEndImageAndSetGameOver();
-			}
-
+		{			
 			//User requests quit
 			if (e.type == SDL_QUIT)
 			{
@@ -215,16 +214,16 @@ void worm_updateLocation(struct Worm* worm)
 
 	if (worm->previous == NULL) {
 		if (worm->direction == UP) {
-			worm->location.y -= 3;
+			worm->location.y--;
 		}
 		else if (worm->direction == DOWN) {
-			worm->location.y += 3;
+			worm->location.y++;
 		}
 		else if (worm->direction == LEFT) {
-			worm->location.x -= 3;
+			worm->location.x--;
 		}
 		else if (worm->direction == RIGHT) {
-			worm->location.x += 3;
+			worm->location.x++;
 		}
 	}
 	else {
