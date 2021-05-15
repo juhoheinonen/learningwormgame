@@ -13,11 +13,13 @@ int main();
 void initializeGameGrid();
 struct Worm* worm_getTail(struct Worm);
 void updateGrid(struct Worm);
-//void drawWorm(struct Worm);
 void closeSdl();
 int worm_getLength(struct Worm);
 void showEndImageAndSetGameOver();
+void createApple();
 bool gGameOver;
+bool gAppleExists;
+bool getsApple(struct Worm);
 
 enum PixelDimensions { SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
@@ -52,7 +54,14 @@ struct Worm
 	struct Worm* previous;
 };
 
+struct Apple
+{
+	struct Location location;
+};
+
 struct Color backgroundColor, wormColor, fruitColor;
+
+struct Apple gApple;
 
 SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
@@ -64,7 +73,7 @@ int main()
 {
 	if (!init()) {
 		printf("Failed to initialize!\n");
-	}	
+	}
 
 	gGameOver = false;
 	backgroundColor.red = 222;
@@ -95,18 +104,25 @@ int main()
 	struct Worm tail;
 	tail.isHead = false;
 	tail.direction = worm.direction;
-	tail.location.x = worm.location.x + 3;
+	tail.location.x = worm.location.x + 1;
 	tail.location.y = worm.location.y;
 	tail.next = NULL;
 	tail.previous = &worm;
-	worm.next = &tail;	
+	worm.next = &tail;
+
+	gAppleExists = false;
 
 	// initialize grid
-	initializeGameGrid();	
+	initializeGameGrid();
 
 	while (!quit) {
 		SDL_Delay(20);
 		if (!gGameOver) {
+			if (!gAppleExists) {
+				createApple();
+				gAppleExists = true;
+			}
+
 			worm_updateLocation(&worm);
 			updateGrid(worm);
 			drawWindow();
@@ -116,7 +132,7 @@ int main()
 		}
 
 		while (SDL_PollEvent(&e) != 0)
-		{			
+		{
 			//User requests quit
 			if (e.type == SDL_QUIT)
 			{
@@ -181,7 +197,7 @@ struct Worm* worm_getTail(struct Worm worm)
 }
 
 void drawWindow() {
-	gScreenSurface = SDL_GetWindowSurface(gWindow);	
+	gScreenSurface = SDL_GetWindowSurface(gWindow);
 
 	for (int i = 0; i < GRID_WIDTH; i++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
@@ -197,7 +213,7 @@ void drawWindow() {
 				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, wormColor.red, wormColor.green, wormColor.blue));
 			}
 			else if (gGameGrid[i][j] == Fruit) {
-				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, wormColor.red, wormColor.green, wormColor.blue));
+				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, fruitColor.red, fruitColor.green, fruitColor.blue));
 			}
 		}
 	}
@@ -225,10 +241,14 @@ void worm_updateLocation(struct Worm* worm)
 		else if (worm->direction == RIGHT) {
 			worm->location.x++;
 		}
+		
+		if (getsApple(*worm)) {
+			gAppleExists = false;
+		}
 	}
 	else {
 		worm->location = worm->previous->location;
-	}	
+	}
 }
 
 bool init() {
@@ -246,7 +266,7 @@ bool init() {
 			printf("Window could not be created! SDL_ERROR: %s\n", SDL_GetError());
 		}
 		else {
-			gScreenSurface = SDL_GetWindowSurface(gWindow);			
+			gScreenSurface = SDL_GetWindowSurface(gWindow);
 
 			return true;
 		}
@@ -274,9 +294,9 @@ void updateGrid(struct Worm worm) {
 	}
 }
 
-void closeSdl() {	
+void closeSdl() {
 	SDL_FreeSurface(gScreenSurface);
-	SDL_FreeSurface(gEndImage);	
+	SDL_FreeSurface(gEndImage);
 	SDL_DestroyWindow(gWindow);
 	SDL_Quit();
 }
@@ -293,8 +313,8 @@ int worm_getLength(struct Worm worm)
 }
 
 void showEndImageAndSetGameOver()
-{	
-	gGameOver = true;	
+{
+	gGameOver = true;
 
 	gScreenSurface = SDL_GetWindowSurface(gWindow);
 
@@ -302,4 +322,30 @@ void showEndImageAndSetGameOver()
 	gEndImage = SDL_LoadBMP("endImage.bmp");
 	SDL_BlitSurface(gEndImage, NULL, gScreenSurface, NULL);
 	SDL_UpdateWindowSurface(gWindow);
+}
+
+void createApple()
+{
+	srand(time(NULL));
+	int maxX = GRID_WIDTH - 4;
+	gApple.location.x = rand() % (maxX + 1);
+	int maxY = GRID_HEIGHT - 4;
+	gApple.location.y = rand() % (maxY + 1);
+
+	for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
+		for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
+			gGameGrid[i][j] = Fruit;
+		}
+	}
+}
+
+bool getsApple(struct Worm worm) {
+	for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
+		for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
+			if (gApple.location.x == worm.location.x && gApple.location.y == worm.location.y) {
+				return true;
+			}
+		}
+	}
+	return false;
 }
