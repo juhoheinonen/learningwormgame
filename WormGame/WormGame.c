@@ -16,14 +16,14 @@ void updateGrid(struct Worm);
 //void drawWorm(struct Worm);
 void closeSdl();
 int worm_getLength(struct Worm);
-void showEndTextAndEnd();
+void showEndImageAndSetGameOver();
 bool gGameOver;
 
 enum PixelDimensions { SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
 enum Directions { LEFT, UP, RIGHT, DOWN };
 
-const int GamePieceLength = 4;
+const int GamePieceLength = 5;
 
 struct Color
 {
@@ -54,15 +54,9 @@ struct Worm
 
 struct Color backgroundColor, wormColor, fruitColor;
 
-//The window we'll be rendering to
 SDL_Window* gWindow = NULL;
-
-//The surface contained by the window
 SDL_Surface* gScreenSurface = NULL;
-
-SDL_Surface* gHelloWorld = NULL;
-
-SDL_Renderer* gRenderer = NULL;
+SDL_Surface* gEndImage = NULL;
 
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
 
@@ -73,9 +67,9 @@ int main()
 	}	
 
 	gGameOver = false;
-	backgroundColor.red = 0;
-	backgroundColor.green = 0;
-	backgroundColor.blue = 0;
+	backgroundColor.red = 222;
+	backgroundColor.green = 222;
+	backgroundColor.blue = 222;
 
 	wormColor.red = 150;
 	wormColor.green = 100;
@@ -108,9 +102,7 @@ int main()
 	worm.next = &tail;	
 
 	// initialize grid
-	initializeGameGrid();
-
-	drawWindow();
+	initializeGameGrid();	
 
 	while (!quit) {
 		SDL_Delay(20);
@@ -122,6 +114,10 @@ int main()
 
 		while (SDL_PollEvent(&e) != 0)
 		{
+			if (gGameOver) {
+				showEndImageAndSetGameOver();
+			}
+
 			//User requests quit
 			if (e.type == SDL_QUIT)
 			{
@@ -186,9 +182,7 @@ struct Worm* worm_getTail(struct Worm worm)
 }
 
 void drawWindow() {
-	gScreenSurface = SDL_GetWindowSurface(gWindow);
-
-	//SDL_FillRect(gScreenSurface, NULL, SDL_MapRGB(gScreenSurface->format, backgroundColor.red, backgroundColor.green, backgroundColor.blue));	
+	gScreenSurface = SDL_GetWindowSurface(gWindow);	
 
 	for (int i = 0; i < GRID_WIDTH; i++) {
 		for (int j = 0; j < GRID_HEIGHT; j++) {
@@ -253,9 +247,7 @@ bool init() {
 			printf("Window could not be created! SDL_ERROR: %s\n", SDL_GetError());
 		}
 		else {
-			gScreenSurface = SDL_GetWindowSurface(gWindow);
-
-			gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
+			gScreenSurface = SDL_GetWindowSurface(gWindow);			
 
 			return true;
 		}
@@ -266,12 +258,12 @@ bool init() {
 void updateGrid(struct Worm worm) {
 	// draw worm's head's current location
 	if (worm.location.x < 0 || worm.location.x >= GRID_WIDTH) {
-		// crash to outer border horizontally.
-		showEndTextAndEnd();
+		// crash to outer border horizontally.	
+		showEndImageAndSetGameOver();
 	}
 	else if (worm.location.y < 0 || worm.location.y >= GRID_WIDTH) {
 		// crash to outer border vertically.
-		showEndTextAndEnd();
+		showEndImageAndSetGameOver();
 	}
 	else {
 		gGameGrid[worm.location.x][worm.location.y] = WormTile;
@@ -283,12 +275,10 @@ void updateGrid(struct Worm worm) {
 	}
 }
 
-void closeSdl() {
-	SDL_FreeSurface(gHelloWorld);
-	gHelloWorld = NULL;
-
+void closeSdl() {	
+	SDL_FreeSurface(gScreenSurface);
+	SDL_FreeSurface(gEndImage);	
 	SDL_DestroyWindow(gWindow);
-
 	SDL_Quit();
 }
 
@@ -303,46 +293,14 @@ int worm_getLength(struct Worm worm)
 	return length;
 }
 
-void showEndTextAndEnd()
-{
-	if (TTF_Init() >= 0) {
-		//this opens a font style and sets a size
-		TTF_Font* Sans = TTF_OpenFont("Px437_IBM_VGA_8x16-2x.ttf", 24);
+void showEndImageAndSetGameOver()
+{	
+	gGameOver = true;	
 
-		// this is the color in rgb format,
-		// maxing out all would give you the color white,
-		// and it will be your text's color
-		SDL_Color White = { 255, 255, 255 };
+	gScreenSurface = SDL_GetWindowSurface(gWindow);
 
-		// as TTF_RenderText_Solid could only be used on
-		// SDL_Surface then you have to create the surface first
-		SDL_Surface* surfaceMessage =
-			TTF_RenderText_Solid(Sans, "Game over. Thanks for playing!", White);
-
-		// now you can convert it into a texture
-		SDL_Texture* Message = SDL_CreateTextureFromSurface(gRenderer, surfaceMessage);
-
-		SDL_Rect Message_rect; //create a rect
-		Message_rect.x = 50;  //controls the rect's x coordinate 
-		Message_rect.y = 50; // controls the rect's y coordinte
-		Message_rect.w = 100; // controls the width of the rect
-		Message_rect.h = 100; // controls the height of the rect
-
-		// (0,0) is on the top left of the window/screen,
-		// think a rect as the text's box,
-		// that way it would be very simple to understand
-
-		// Now since it's a texture, you have to put RenderCopy
-		// in your game loop area, the area where the whole code executes
-
-		// you put the renderer's name first, the Message,
-		// the crop size (you can ignore this if you don't want
-		// to dabble with cropping), and the rect which is the size
-		// and coordinate of your texture
-		SDL_RenderCopy(gRenderer, Message, NULL, &Message_rect);
-
-		// Don't forget to free your surface and texture
-		SDL_FreeSurface(surfaceMessage);
-		SDL_DestroyTexture(Message);
-	}	
+	gGameOver = true;
+	gEndImage = SDL_LoadBMP("endImage.bmp");
+	SDL_BlitSurface(gEndImage, NULL, gScreenSurface, NULL);
+	SDL_UpdateWindowSurface(gWindow);
 }
