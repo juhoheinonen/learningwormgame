@@ -18,9 +18,9 @@ void createApple();
 bool gGameOver;
 bool gAppleExists;
 bool getsApple(struct Worm);
-struct Worm* worm_getTail(struct Worm);
-struct Worm* worm_getTailPointer(struct Worm*);
-int worm_getLength(struct Worm);
+//struct Worm* worm_getTail(struct Worm);
+//struct Worm* worm_getTailPointer(struct Worm*);
+//int worm_getLength(struct Worm);
 
 enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
@@ -50,8 +50,8 @@ struct Worm
 {	
 	struct Location location;
 	enum Direction direction;
-	struct Worm* next;
-	struct Worm* previous;
+	/*struct Worm* next;
+	struct Worm* previous;*/
 	bool isNull;
 };
 
@@ -69,6 +69,8 @@ SDL_Surface* gScreenSurface = NULL;
 SDL_Surface* gEndImage = NULL;
 
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
+
+struct Worm gBaseWorm[100];
 
 int main()
 {
@@ -107,8 +109,10 @@ int main()
 		worm.direction = RIGHT;
 	}
 	
-	worm.previous = NULL;
+	//worm.previous = NULL;
 	worm.isNull = false;
+
+	gBaseWorm[0] = worm;
 
 	struct Worm nullTail;
 	nullTail.isNull = true;
@@ -118,9 +122,13 @@ int main()
 	tail.location.x = worm.location.x + 1;
 	tail.location.y = worm.location.y;
 	tail.isNull = false;
-	tail.next = &nullTail;
-	tail.previous = &worm;	
-	worm.next = &tail;
+	//tail.next = &nullTail;
+	//tail.previous = &worm;	
+	//worm.next = &tail;
+
+	gBaseWorm[1] = tail;
+
+	gBaseWorm[2] = nullTail;
 
 	gAppleExists = false;
 
@@ -135,8 +143,8 @@ int main()
 				gAppleExists = true;
 			}
 
-			worm_updateLocation(&worm, worm.location);
-			printf("outer length: %d\n", worm_getLength(worm));
+			worm_updateLocation(0, worm.location);
+			//printf("outer length: %d\n", worm_getLength(worm));
 			updateGrid(worm);
 			drawWindow();
 		}
@@ -153,30 +161,32 @@ int main()
 			}
 			else if (e.type == SDL_KEYDOWN)
 			{
+				struct Worm* wormHead = &gBaseWorm[0];
+
 				//Select surfaces based on key press
 				switch (e.key.keysym.sym)
 				{
 				case SDLK_UP:
-					if (worm.direction != DOWN) {
-						worm.direction = UP;
+					if (wormHead->direction != DOWN) {
+						wormHead->direction = UP;
 					}
 					break;
 
 				case SDLK_DOWN:
-					if (worm.direction != UP) {
-						worm.direction = DOWN;
+					if (wormHead->direction != UP) {
+						wormHead->direction = DOWN;
 					}
 					break;
 
 				case SDLK_LEFT:
-					if (worm.direction != RIGHT) {
-						worm.direction = LEFT;
+					if (wormHead->direction != RIGHT) {
+						wormHead->direction = LEFT;
 					}
 					break;
 
 				case SDLK_RIGHT:
-					if (worm.direction != LEFT) {
-						worm.direction = RIGHT;
+					if (wormHead->direction != LEFT) {
+						wormHead->direction = RIGHT;
 					}
 					break;
 
@@ -226,9 +236,10 @@ void drawWindow() {
 	SDL_UpdateWindowSurface(gWindow);
 }
 
-void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
+void worm_updateLocation(int index, struct Location previousLocation)
 {		
-	if (worm->previous == NULL) {
+	if (index == 0) {
+		struct Worm* worm = &(gBaseWorm[index]);
 		struct Location currentLocation = worm->location;
 
 		if (worm->direction == UP) {
@@ -245,34 +256,59 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 		}
 		
 		if (getsApple(*worm)) {
-			printf("length: %d\n", worm_getLength(*worm));
+			//printf("length: %d\n", worm_getLength(*worm));
+			//gAppleExists = false;
+			//struct Worm* currentTail = worm_getTailPointer(worm);
+
+			//struct Worm nullTail;
+			//nullTail.isNull = true;
+
+			
+			///*newTail.previous = currentTail;			
+			//newTail.isNull = false;
+			///*newTail.next = &nullTail;*/
+			//newTail.direction = currentTail->direction;
+			///*currentTail->next = &newTail;			*/
+
+			//printf("length: %d\n", worm_getLength(*worm));
+
 			gAppleExists = false;
-			struct Worm* currentTail = worm_getTailPointer(worm);
 
-			struct Worm nullTail;
-			nullTail.isNull = true;
+			struct Worm* currentTail = NULL;
 
-			struct Worm newTail;
-			newTail.previous = currentTail;
-			newTail.location = currentTail->location;
-			newTail.isNull = false;
-			newTail.next = &nullTail;
-			newTail.direction = currentTail->direction;
-			currentTail->next = &newTail;			
-
-			printf("length: %d\n", worm_getLength(*worm));
+			for (int i = 0; i < 99; i++) {
+				struct Worm* currentWorm = &gBaseWorm[i];
+				if (!currentWorm->isNull) {
+					currentTail = currentWorm;
+				}
+				else {
+					struct Worm newTail;
+					newTail.location = currentTail->location;
+					newTail.direction = currentTail->direction;
+					newTail.isNull = false;
+					gBaseWorm[i] = newTail;
+					struct Worm nullTail;
+					nullTail.isNull = true;
+					gBaseWorm[i + 1] = nullTail;
+					break;
+				}
+			}
 		}
-		struct Worm* next = worm->next;
+		//struct Worm* next = worm->next;
+		int nextIndex = index + 1;
+		struct Worm* next = &gBaseWorm[nextIndex];
 		if (!next->isNull) {
-			worm_updateLocation(next, currentLocation);
+			worm_updateLocation(nextIndex, currentLocation);
 		}
 	}
 	else {
+		struct Worm* worm = &gBaseWorm[index];
 		struct Location currentLocation = worm->location;
 		worm->location = previousLocation;
-		struct Worm* next = worm->next;
+		int nextIndex = index + 1;
+		struct Worm* next = &gBaseWorm[nextIndex];
 		if (!next->isNull) {
-			worm_updateLocation(next, currentLocation);
+			worm_updateLocation(nextIndex, currentLocation);
 		}
 	}
 }
@@ -300,20 +336,34 @@ bool init() {
 	return false;
 }
 
-void updateGrid(struct Worm worm) {
+void updateGrid() {
+	struct Worm* worm = &gBaseWorm[0];
 	// draw worm's head's current location
-	if (worm.location.x < 0 || worm.location.x >= GRID_WIDTH) {
+	if (worm->location.x < 0 || worm->location.x >= GRID_WIDTH) {
 		// crash to outer border horizontally.	
 		showEndImageAndSetGameOver();
 	}
-	else if (worm.location.y < 0 || worm.location.y >= GRID_WIDTH) {
+	else if (worm->location.y < 0 || worm->location.y >= GRID_WIDTH) {
 		// crash to outer border vertically.
 		showEndImageAndSetGameOver();
 	}
 	else {
-		gGameGrid[worm.location.x][worm.location.y] = WormTile;
+		gGameGrid[worm->location.x][worm->location.y] = WormTile;
 		//printf("head: x: %d y: %d\n", worm.location.x, worm.location.y);
-		struct Worm* tail = worm_getTailPointer(&worm);
+		//struct Worm* tail = worm_getTailPointer(&worm);
+
+		struct Worm* tail = NULL;
+
+		for (int i = 0; i < 99; i++) {
+			struct Worm* currentWorm = &gBaseWorm[i];
+			if (!currentWorm->isNull) {
+				tail = currentWorm;
+			}
+			else {				
+				break;
+			}
+		}
+
 
 		// clear worm's tile
 		gGameGrid[tail->location.x][tail->location.y] = Empty;
@@ -387,37 +437,37 @@ bool getsApple(struct Worm worm) {
 	return false;
 }
 
-struct Worm* worm_getTail(struct Worm worm)
-{
-	while (!worm.next->isNull) {
-		worm = *worm.next;
-	}
-	return &worm;
-}
+//struct Worm* worm_getTail(struct Worm worm)
+//{
+//	while (!worm.next->isNull) {
+//		worm = *worm.next;
+//	}
+//	return &worm;
+//}
 
-struct Worm* worm_getTailPointer(struct Worm* worm) {
-	struct Worm tail;
-	
-	struct Worm* currentTail = worm->next;
+//struct Worm* worm_getTailPointer(struct Worm* worm) {
+//	struct Worm tail;
+//	
+//	struct Worm* currentTail = worm->next;
+//
+//	while (!currentTail->next->isNull) {
+//		currentTail = currentTail->next;
+//	}
+//
+//	return currentTail;	
+//}
 
-	while (!currentTail->next->isNull) {
-		currentTail = currentTail->next;
-	}
-
-	return currentTail;	
-}
-
-int worm_getLength(struct Worm worm) {
-	int length = 1;
-
-	if (!worm.isNull) {
-		length = 2;	
-		struct Worm currentTail = *(worm.next);
-
-		while (!currentTail.next->isNull) {
-			currentTail = *(currentTail.next);
-			length++;
-		}
-	}
-	return length;
-}
+//int worm_getLength(struct Worm worm) {
+//	int length = 1;
+//
+//	if (!worm.isNull) {
+//		length = 2;	
+//		struct Worm currentTail = *(worm.next);
+//
+//		while (!currentTail.next->isNull) {
+//			currentTail = *(currentTail.next);
+//			length++;
+//		}
+//	}
+//	return length;
+//}
