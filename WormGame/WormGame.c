@@ -22,7 +22,7 @@ struct Worm* worm_getTail(struct Worm);
 struct Worm* worm_getTailPointer(struct Worm*);
 int worm_getLength(struct Worm);
 
-enum PixelDimensions { SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480 };
+enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
 enum Directions { LEFT, UP, RIGHT, DOWN };
 
@@ -350,7 +350,7 @@ void showEndImageAndSetGameOver()
 
 void createApple()
 {
-	srand(time(NULL));
+	srand(2 * time(NULL));
 	int maxX = GRID_WIDTH - 4;
 	gApple.location.x = rand() % (maxX + 1);
 	int maxY = GRID_HEIGHT - 4;
@@ -404,14 +404,7 @@ struct Worm* worm_getTailPointer(struct Worm* worm) {
 		currentTail = currentTail->next;
 	}
 
-	return currentTail;
-
-	/*tail.previous = &currentTail;
-	tail.location = currentTail.location;
-	tail.next = NULL;
-	currentTail.next = &tail;
-
-	printf("length: %d\n", worm_getLength(*worm));*/
+	return currentTail;	
 }
 
 int worm_getLength(struct Worm worm) {
