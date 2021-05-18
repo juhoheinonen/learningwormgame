@@ -8,7 +8,7 @@
 
 bool init();
 void drawWindow();
-void worm_updateLocation(struct Worm*);
+void worm_updateLocation(struct Worm*, struct Location);
 int main();
 void initializeGameGrid();
 struct Worm* worm_getTail(struct Worm);
@@ -20,6 +20,7 @@ void createApple();
 bool gGameOver;
 bool gAppleExists;
 bool getsApple(struct Worm);
+void addTail(struct Worm*);
 
 enum PixelDimensions { SCREEN_WIDTH = 640, SCREEN_HEIGHT = 480 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
@@ -46,8 +47,7 @@ struct Location {
 };
 
 struct Worm
-{
-	bool isHead;
+{	
 	struct Location location;
 	enum Direction direction;
 	struct Worm* next;
@@ -92,17 +92,23 @@ int main()
 	SDL_Event e;
 
 	// initial position
-	struct Worm worm;
-	worm.isHead = true;
-	worm.direction = LEFT;
-	worm.previous = NULL;
+	struct Worm worm;	
 	srand(time(NULL));
 	int maxX = GRID_WIDTH - 1;
 	worm.location.x = rand() % (maxX + 1);
-	int maxY = GRID_HEIGHT - 1;
+	int maxY = GRID_HEIGHT - 4;
 	worm.location.y = rand() % (maxY + 1);
+
+	if (worm.location.x > (GRID_WIDTH / 2)) {
+		worm.direction = LEFT;
+	}
+	else {
+		worm.direction = RIGHT;
+	}
+	
+	worm.previous = NULL;
+
 	struct Worm tail;
-	tail.isHead = false;
 	tail.direction = worm.direction;
 	tail.location.x = worm.location.x + 1;
 	tail.location.y = worm.location.y;
@@ -123,7 +129,7 @@ int main()
 				gAppleExists = true;
 			}
 
-			worm_updateLocation(&worm);
+			worm_updateLocation(&worm, worm.location);
 			updateGrid(worm);
 			drawWindow();
 		}
@@ -221,14 +227,11 @@ void drawWindow() {
 	SDL_UpdateWindowSurface(gWindow);
 }
 
-void worm_updateLocation(struct Worm* worm)
-{
-	// Update to next part this part's previous location.
-	if (worm->next != NULL) {
-		worm_updateLocation(worm->next);
-	}
-
+void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
+{		
 	if (worm->previous == NULL) {
+		struct Location currentLocation = worm->location;
+
 		if (worm->direction == UP) {
 			worm->location.y--;
 		}
@@ -244,10 +247,20 @@ void worm_updateLocation(struct Worm* worm)
 		
 		if (getsApple(*worm)) {
 			gAppleExists = false;
+			addTail(worm);			
+		}
+		struct Worm* next = worm->next;
+		if (next != NULL) {
+			worm_updateLocation(next, currentLocation);
 		}
 	}
 	else {
-		worm->location = worm->previous->location;
+		struct Location currentLocation = worm->location;
+		worm->location = previousLocation;
+		struct Worm* next = worm->next;
+		if (next != NULL) {
+			worm_updateLocation(next, currentLocation);
+		}
 	}
 }
 
@@ -286,11 +299,20 @@ void updateGrid(struct Worm worm) {
 	}
 	else {
 		gGameGrid[worm.location.x][worm.location.y] = WormTile;
-
+		printf("head: x: %d y: %d\n", worm.location.x, worm.location.y);
 		struct Worm* tail = worm_getTail(worm);
 
 		// clear worm's tile
 		gGameGrid[tail->location.x][tail->location.y] = Empty;
+		printf("tail: x: %d y: %d\n", tail->location.x, tail->location.y);
+
+		if (!gAppleExists) {
+			for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
+				for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
+					gGameGrid[i][j] = Empty;
+				}
+			}
+		}
 	}
 }
 
@@ -332,6 +354,19 @@ void createApple()
 	int maxY = GRID_HEIGHT - 4;
 	gApple.location.y = rand() % (maxY + 1);
 
+	if (gApple.location.x <= 10) {
+		gApple.location.x = 20;
+	}
+	if (gApple.location.x > GRID_WIDTH - 10) {
+		gApple.location.x = GRID_WIDTH - 20;
+	}
+	if (gApple.location.y <= 10) {
+		gApple.location.y = 20;
+	}
+	if (gApple.location.y > GRID_HEIGHT - 10) {
+		gApple.location.y = GRID_HEIGHT - 20;
+	}
+
 	for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
 		for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
 			gGameGrid[i][j] = Fruit;
@@ -339,13 +374,28 @@ void createApple()
 	}
 }
 
-bool getsApple(struct Worm worm) {
-	for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
-		for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
-			if (gApple.location.x == worm.location.x && gApple.location.y == worm.location.y) {
+bool getsApple(struct Worm worm) {	
+	for (int i = max(0, gApple.location.x - 1); i < min(gApple.location.x + 3, GRID_WIDTH - 1); i++) {
+		for (int j = max(0, gApple.location.y - 1); j < min(gApple.location.y + 3, GRID_HEIGHT - 1); j++) {
+			if (i == worm.location.x && j == worm.location.y) {
 				return true;
 			}
 		}
 	}
 	return false;
+}
+
+void addTail(struct Worm* worm) {		
+	struct Worm tail;
+	
+	struct Worm currentTail;
+
+	while (worm->next != NULL) {
+		currentTail = *(worm->next);
+	}
+
+	tail.previous = &currentTail;
+	tail.location = currentTail.location;
+	tail.next = NULL;
+	currentTail.next = &tail;
 }
