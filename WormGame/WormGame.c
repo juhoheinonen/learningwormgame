@@ -6,21 +6,20 @@
 #include <SDL_ttf.h>
 #include <SDL_render.h>
 
-bool init();
+bool initializeSdl();
 void drawWindow();
 void worm_updateLocation(struct Worm*, struct Location);
 int main();
 void initializeGameGrid();
-void updateGrid(struct Worm);
+void updateGrid(struct Worm*);
 void closeSdl();
 void showEndImageAndSetGameOver();
 void createApple();
 bool gGameOver;
 bool gAppleExists;
 bool getsApple(struct Worm);
-struct Worm* worm_getTail(struct Worm);
-struct Worm* worm_getTailPointer(struct Worm*);
-int worm_getLength(struct Worm);
+struct Worm* worm_getTail(struct Worm*);
+void initializeColors();
 
 enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
@@ -51,16 +50,15 @@ struct Worm
 	struct Location location;
 	enum Direction direction;
 	struct Worm* next;
-	struct Worm* previous;
-	bool isNull;
+	struct Worm* previous;	
 };
 
 struct Apple
 {
-	struct Location location;
+	struct Location location;	
 };
 
-struct Color backgroundColor, wormColor, fruitColor;
+struct Color gBackgroundColor, gWormColor, gFruitColor;
 
 struct Apple gApple;
 
@@ -70,58 +68,48 @@ SDL_Surface* gEndImage = NULL;
 
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
 
-int main()
+int main(int argc, char* argv[])
 {
-	if (!init()) {
+	if (!initializeSdl()) {
 		printf("Failed to initialize!\n");
 	}
 
 	gGameOver = false;
-	backgroundColor.red = 222;
-	backgroundColor.green = 222;
-	backgroundColor.blue = 222;
 
-	wormColor.red = 150;
-	wormColor.green = 100;
-	wormColor.blue = 10;
-
-	fruitColor.red = 255;
-	fruitColor.green = 10;
-	fruitColor.blue = 10;
+	initializeColors();
 
 	bool quit = false;
 	SDL_Event e;
 
 	// initial position
-	struct Worm worm;	
+	struct Worm* worm = NULL;
+
+	worm = (struct Worm*)malloc(sizeof(struct Worm));
+
 	srand(time(NULL));
 	int maxX = GRID_WIDTH - 1;
-	worm.location.x = rand() % (maxX + 1);
+	worm->location.x = rand() % (maxX + 1);
 	int maxY = GRID_HEIGHT - 4;
-	worm.location.y = rand() % (maxY + 1);
+	worm->location.y = rand() % (maxY + 1);
 
-	if (worm.location.x > (GRID_WIDTH / 2)) {
-		worm.direction = LEFT;
+	if (worm->location.x > (GRID_WIDTH / 2)) {
+		worm->direction = LEFT;
 	}
 	else {
-		worm.direction = RIGHT;
+		worm->direction = RIGHT;
 	}
 	
-	worm.previous = NULL;
-	worm.isNull = false;
+	worm->previous = NULL;
+		
 
-	struct Worm nullTail;
-	nullTail.isNull = true;
-
-	struct Worm tail;
-	tail.direction = worm.direction;
-	tail.location.x = worm.location.x + 1;
-	tail.location.y = worm.location.y;
-	tail.isNull = false;
-	tail.next = &nullTail;
-	tail.previous = &worm;	
-	worm.next = &tail;
-
+	struct Worm* tail = NULL;
+	tail = (struct Worm*)malloc(sizeof(struct Worm));
+	tail->direction = worm->direction;
+	tail->location.x = worm->location.x + 1;
+	tail->location.y = worm->location.y;
+	tail->next = NULL;	
+	tail->previous = worm;
+	worm->next = tail;
 	gAppleExists = false;
 
 	// initialize grid
@@ -135,8 +123,7 @@ int main()
 				gAppleExists = true;
 			}
 
-			worm_updateLocation(&worm, worm.location);
-			printf("outer length: %d\n", worm_getLength(worm));
+			worm_updateLocation(worm, worm->location);			
 			updateGrid(worm);
 			drawWindow();
 		}
@@ -157,26 +144,26 @@ int main()
 				switch (e.key.keysym.sym)
 				{
 				case SDLK_UP:
-					if (worm.direction != DOWN) {
-						worm.direction = UP;
+					if (worm->direction != DOWN) {
+						worm->direction = UP;
 					}
 					break;
 
 				case SDLK_DOWN:
-					if (worm.direction != UP) {
-						worm.direction = DOWN;
+					if (worm->direction != UP) {
+						worm->direction = DOWN;
 					}
 					break;
 
 				case SDLK_LEFT:
-					if (worm.direction != RIGHT) {
-						worm.direction = LEFT;
+					if (worm->direction != RIGHT) {
+						worm->direction = LEFT;
 					}
 					break;
 
 				case SDLK_RIGHT:
-					if (worm.direction != LEFT) {
-						worm.direction = RIGHT;
+					if (worm->direction != LEFT) {
+						worm->direction = RIGHT;
 					}
 					break;
 
@@ -212,13 +199,13 @@ void drawWindow() {
 			tile.w = GamePieceLength;
 			tile.h = GamePieceLength;
 			if (gGameGrid[i][j] == Empty) {
-				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, backgroundColor.red, backgroundColor.green, backgroundColor.blue));
+				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, gBackgroundColor.red, gBackgroundColor.green, gBackgroundColor.blue));
 			}
 			else if (gGameGrid[i][j] == WormTile) {
-				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, wormColor.red, wormColor.green, wormColor.blue));
+				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, gWormColor.red, gWormColor.green, gWormColor.blue));
 			}
 			else if (gGameGrid[i][j] == Fruit) {
-				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, fruitColor.red, fruitColor.green, fruitColor.blue));
+				SDL_FillRect(gScreenSurface, &tile, SDL_MapRGB(gScreenSurface->format, gFruitColor.red, gFruitColor.green, gFruitColor.blue));
 			}
 		}
 	}
@@ -244,26 +231,20 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 			worm->location.x++;
 		}
 		
-		if (getsApple(*worm)) {
-			printf("length: %d\n", worm_getLength(*worm));
+		if (getsApple(*worm)) {			
 			gAppleExists = false;
-			struct Worm* currentTail = worm_getTailPointer(worm);
+			struct Worm* currentTail = worm_getTail(worm);
 
-			struct Worm nullTail;
-			nullTail.isNull = true;
-
-			struct Worm newTail;
-			newTail.previous = currentTail;
-			newTail.location = currentTail->location;
-			newTail.isNull = false;
-			newTail.next = &nullTail;
-			newTail.direction = currentTail->direction;
-			currentTail->next = &newTail;			
-
-			printf("length: %d\n", worm_getLength(*worm));
+			struct Worm* newTail = NULL;
+			newTail = (struct Worm*)malloc(sizeof(struct Worm));
+			newTail->previous = currentTail;
+			newTail->location = currentTail->location;			
+			newTail->next = NULL;			
+			newTail->direction = currentTail->direction;
+			currentTail->next = newTail;			
 		}
 		struct Worm* next = worm->next;
-		if (!next->isNull) {
+		if (next != NULL) {
 			worm_updateLocation(next, currentLocation);
 		}
 	}
@@ -271,14 +252,13 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 		struct Location currentLocation = worm->location;
 		worm->location = previousLocation;
 		struct Worm* next = worm->next;
-		if (!next->isNull) {
+		if (next != NULL) {
 			worm_updateLocation(next, currentLocation);
 		}
 	}
 }
 
-bool init() {
-	//Initialize SDL
+bool initializeSdl() {	
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -300,24 +280,22 @@ bool init() {
 	return false;
 }
 
-void updateGrid(struct Worm worm) {
+void updateGrid(struct Worm* worm) {
 	// draw worm's head's current location
-	if (worm.location.x < 0 || worm.location.x >= GRID_WIDTH) {
+	if (worm->location.x < 0 || worm->location.x >= GRID_WIDTH) {
 		// crash to outer border horizontally.	
 		showEndImageAndSetGameOver();
 	}
-	else if (worm.location.y < 0 || worm.location.y >= GRID_WIDTH) {
+	else if (worm->location.y < 0 || worm->location.y >= GRID_WIDTH) {
 		// crash to outer border vertically.
 		showEndImageAndSetGameOver();
 	}
 	else {
-		gGameGrid[worm.location.x][worm.location.y] = WormTile;
-		//printf("head: x: %d y: %d\n", worm.location.x, worm.location.y);
-		struct Worm* tail = worm_getTailPointer(&worm);
+		gGameGrid[worm->location.x][worm->location.y] = WormTile;		
+		struct Worm* tail = worm_getTail(worm);
 
-		// clear worm's tile
-		gGameGrid[tail->location.x][tail->location.y] = Empty;
-		//printf("tail: x: %d y: %d\n", tail->location.x, tail->location.y);
+		// clear worm's tail's tile
+		gGameGrid[tail->location.x][tail->location.y] = Empty;		
 
 		if (!gAppleExists) {
 			for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
@@ -376,6 +354,20 @@ void createApple()
 	}
 }
 
+void initializeColors() {
+	gBackgroundColor.red = 222;
+	gBackgroundColor.green = 222;
+	gBackgroundColor.blue = 222;
+
+	gWormColor.red = 150;
+	gWormColor.green = 100;
+	gWormColor.blue = 10;
+
+	gFruitColor.red = 255;
+	gFruitColor.green = 10;
+	gFruitColor.blue = 10;
+}
+
 bool getsApple(struct Worm worm) {	
 	for (int i = max(0, gApple.location.x - 1); i < min(gApple.location.x + 3, GRID_WIDTH - 1); i++) {
 		for (int j = max(0, gApple.location.y - 1); j < min(gApple.location.y + 3, GRID_HEIGHT - 1); j++) {
@@ -387,37 +379,12 @@ bool getsApple(struct Worm worm) {
 	return false;
 }
 
-struct Worm* worm_getTail(struct Worm worm)
-{
-	while (!worm.next->isNull) {
-		worm = *worm.next;
-	}
-	return &worm;
-}
-
-struct Worm* worm_getTailPointer(struct Worm* worm) {
-	struct Worm tail;
-	
+struct Worm* worm_getTail(struct Worm* worm) {		
 	struct Worm* currentTail = worm->next;
 
-	while (!currentTail->next->isNull) {
+	while (currentTail->next != NULL) {
 		currentTail = currentTail->next;
 	}
 
 	return currentTail;	
-}
-
-int worm_getLength(struct Worm worm) {
-	int length = 1;
-
-	if (!worm.isNull) {
-		length = 2;	
-		struct Worm currentTail = *(worm.next);
-
-		while (!currentTail.next->isNull) {
-			currentTail = *(currentTail.next);
-			length++;
-		}
-	}
-	return length;
 }
