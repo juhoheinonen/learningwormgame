@@ -22,7 +22,7 @@ struct Worm* worm_getTail(struct Worm*);
 void initializeColors();
 
 enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
-enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 120 };
+enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 100 };
 enum Directions { LEFT, UP, RIGHT, DOWN };
 
 const int GamePieceLength = 5;
@@ -61,6 +61,8 @@ struct Apple
 struct Color gBackgroundColor, gWormColor, gFruitColor;
 
 struct Apple gApple;
+
+int gScore;
 
 SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
@@ -116,7 +118,7 @@ int main(int argc, char* argv[])
 	initializeGameGrid();
 
 	while (!quit) {
-		SDL_Delay(20);
+		SDL_Delay(10);
 		if (!gGameOver) {
 			if (!gAppleExists) {
 				createApple();
@@ -231,7 +233,8 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 			worm->location.x++;
 		}
 		
-		if (getsApple(*worm)) {			
+		if (getsApple(*worm)) {
+			gScore += 10;
 			gAppleExists = false;
 			struct Worm* currentTail = worm_getTail(worm);
 
@@ -286,7 +289,7 @@ void updateGrid(struct Worm* worm) {
 		// crash to outer border horizontally.	
 		showEndImageAndSetGameOver();
 	}
-	else if (worm->location.y < 0 || worm->location.y >= GRID_WIDTH) {
+	else if (worm->location.y < 0 || worm->location.y >= GRID_HEIGHT) {
 		// crash to outer border vertically.
 		showEndImageAndSetGameOver();
 	}
