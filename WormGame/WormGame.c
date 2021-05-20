@@ -46,16 +46,16 @@ struct Location {
 };
 
 struct Worm
-{	
+{
 	struct Location location;
 	enum Direction direction;
 	struct Worm* next;
-	struct Worm* previous;	
+	struct Worm* previous;
 };
 
 struct Apple
 {
-	struct Location location;	
+	struct Location location;
 };
 
 struct Color gBackgroundColor, gWormColor, gFruitColor;
@@ -67,6 +67,8 @@ int gScore;
 SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 SDL_Surface* gEndImage = NULL;
+TTF_Font* gFont = NULL;
+SDL_Renderer* gRenderer = NULL;
 
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
 
@@ -100,16 +102,16 @@ int main(int argc, char* argv[])
 	else {
 		worm->direction = RIGHT;
 	}
-	
+
 	worm->previous = NULL;
-		
+
 
 	struct Worm* tail = NULL;
 	tail = (struct Worm*)malloc(sizeof(struct Worm));
 	tail->direction = worm->direction;
 	tail->location.x = worm->location.x + 1;
 	tail->location.y = worm->location.y;
-	tail->next = NULL;	
+	tail->next = NULL;
 	tail->previous = worm;
 	worm->next = tail;
 	gAppleExists = false;
@@ -125,7 +127,7 @@ int main(int argc, char* argv[])
 				gAppleExists = true;
 			}
 
-			worm_updateLocation(worm, worm->location);			
+			worm_updateLocation(worm, worm->location);
 			updateGrid(worm);
 			drawWindow();
 		}
@@ -212,11 +214,37 @@ void drawWindow() {
 		}
 	}
 
+	SDL_Color textColor = { 255, 255, 255 };
+
+	char* buffer[20];
+
+	SDL_Rect bottomPart;
+	bottomPart.x = 0;
+	bottomPart.y = 520;
+	bottomPart.w = SCREEN_WIDTH;
+	bottomPart.h = 80;
+
+	SDL_FillRect(gScreenSurface, &bottomPart, SDL_MapRGB(gScreenSurface->format, 170, 170, 170));
+
+	sprintf_s(buffer, 20, "Score: %d", gScore);
+
+	SDL_Surface* message = TTF_RenderText_Solid(gFont, buffer, textColor);	
+
+	SDL_Rect offset;
+	offset.x = 50;
+	offset.y = 550;
+
+	//SDL_FillRect(gScreenSurface, SDL_MapRGB(gScreenSurface->format, gWormColor.red, gWormColor.green, gWormColor.blue));
+
+	SDL_BlitSurface(message, NULL, gScreenSurface, &offset);
+
+	SDL_FreeSurface(message);
+
 	SDL_UpdateWindowSurface(gWindow);
 }
 
 void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
-{		
+{
 	if (worm->previous == NULL) {
 		struct Location currentLocation = worm->location;
 
@@ -232,7 +260,7 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 		else if (worm->direction == RIGHT) {
 			worm->location.x++;
 		}
-		
+
 		if (getsApple(*worm)) {
 			gScore += 10;
 			gAppleExists = false;
@@ -241,10 +269,10 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 			struct Worm* newTail = NULL;
 			newTail = (struct Worm*)malloc(sizeof(struct Worm));
 			newTail->previous = currentTail;
-			newTail->location = currentTail->location;			
-			newTail->next = NULL;			
+			newTail->location = currentTail->location;
+			newTail->next = NULL;
 			newTail->direction = currentTail->direction;
-			currentTail->next = newTail;			
+			currentTail->next = newTail;
 		}
 		struct Worm* next = worm->next;
 		if (next != NULL) {
@@ -261,7 +289,7 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 	}
 }
 
-bool initializeSdl() {	
+bool initializeSdl() {
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
 		printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -276,6 +304,19 @@ bool initializeSdl() {
 		}
 		else {
 			gScreenSurface = SDL_GetWindowSurface(gWindow);
+
+			gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
+
+			SDL_SetRenderDrawColor(gRenderer, gBackgroundColor.red, gBackgroundColor.green, gBackgroundColor.blue, 0);
+
+			if (TTF_Init() == -1) {
+				return false;
+			}
+
+			gFont = TTF_OpenFont("Px437_IBM_VGA_8x16-2x.ttf", 28);
+			if (gFont == -1) {
+				return false;
+			}
 
 			return true;
 		}
@@ -294,11 +335,11 @@ void updateGrid(struct Worm* worm) {
 		showEndImageAndSetGameOver();
 	}
 	else {
-		gGameGrid[worm->location.x][worm->location.y] = WormTile;		
+		gGameGrid[worm->location.x][worm->location.y] = WormTile;
 		struct Worm* tail = worm_getTail(worm);
 
 		// clear worm's tail's tile
-		gGameGrid[tail->location.x][tail->location.y] = Empty;		
+		gGameGrid[tail->location.x][tail->location.y] = Empty;
 
 		if (!gAppleExists) {
 			for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
@@ -311,6 +352,13 @@ void updateGrid(struct Worm* worm) {
 }
 
 void closeSdl() {
+
+	//Close the font that was used
+	TTF_CloseFont(gFont);
+
+	//Quit SDL_ttf
+	TTF_Quit();
+
 	SDL_FreeSurface(gScreenSurface);
 	SDL_FreeSurface(gEndImage);
 	SDL_DestroyWindow(gWindow);
@@ -371,7 +419,7 @@ void initializeColors() {
 	gFruitColor.blue = 10;
 }
 
-bool getsApple(struct Worm worm) {	
+bool getsApple(struct Worm worm) {
 	for (int i = max(0, gApple.location.x - 1); i < min(gApple.location.x + 3, GRID_WIDTH - 1); i++) {
 		for (int j = max(0, gApple.location.y - 1); j < min(gApple.location.y + 3, GRID_HEIGHT - 1); j++) {
 			if (i == worm.location.x && j == worm.location.y) {
@@ -382,12 +430,12 @@ bool getsApple(struct Worm worm) {
 	return false;
 }
 
-struct Worm* worm_getTail(struct Worm* worm) {		
+struct Worm* worm_getTail(struct Worm* worm) {
 	struct Worm* currentTail = worm->next;
 
 	while (currentTail->next != NULL) {
 		currentTail = currentTail->next;
 	}
 
-	return currentTail;	
+	return currentTail;
 }
