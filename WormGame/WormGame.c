@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <SDL_ttf.h>
-#include <SDL_render.h>
 
 bool initializeSdl();
 void drawWindow();
@@ -68,7 +67,6 @@ SDL_Window* gWindow = NULL;
 SDL_Surface* gScreenSurface = NULL;
 SDL_Surface* gEndImage = NULL;
 TTF_Font* gFont = NULL;
-SDL_Renderer* gRenderer = NULL;
 
 int gGameGrid[GRID_WIDTH][SCREEN_WIDTH];
 
@@ -232,9 +230,7 @@ void drawWindow() {
 
 	SDL_Rect offset;
 	offset.x = 50;
-	offset.y = 550;
-
-	//SDL_FillRect(gScreenSurface, SDL_MapRGB(gScreenSurface->format, gWormColor.red, gWormColor.green, gWormColor.blue));
+	offset.y = 550;	
 
 	SDL_BlitSurface(message, NULL, gScreenSurface, &offset);
 
@@ -304,11 +300,7 @@ bool initializeSdl() {
 		}
 		else {
 			gScreenSurface = SDL_GetWindowSurface(gWindow);
-
-			gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
-
-			SDL_SetRenderDrawColor(gRenderer, gBackgroundColor.red, gBackgroundColor.green, gBackgroundColor.blue, 0);
-
+			
 			if (TTF_Init() == -1) {
 				return false;
 			}
