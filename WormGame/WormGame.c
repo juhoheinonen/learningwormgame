@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 	initializeGameGrid();
 
 	while (!quit) {
-		SDL_Delay(10);
+		SDL_Delay(7);
 		if (!gGameOver) {
 			if (!gAppleExists) {
 				createApple();
