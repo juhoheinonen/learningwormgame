@@ -155,7 +155,7 @@ void drawWindow() {
 
 	SDL_Color textColor = { 255, 255, 255 };
 
-	char* buffer[20];
+	char buffer[20];
 
 	SDL_Rect bottomPart;
 	bottomPart.x = 0;

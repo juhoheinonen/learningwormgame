@@ -23,11 +23,6 @@
     <Font Include="Px437_IBM_VGA_8x16-2x.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="endImage.bmp">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="structsAndEnums.h">
       <Filter>Header Files</Filter>
     </ClInclude>
