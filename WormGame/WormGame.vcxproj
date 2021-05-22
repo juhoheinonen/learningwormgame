@@ -154,6 +154,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="structsAndEnums.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

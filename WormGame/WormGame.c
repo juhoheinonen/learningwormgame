@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <SDL_ttf.h>
+#include "structsAndEnums.h"
 
 bool initializeSdl();
 void drawWindow();
@@ -15,52 +16,14 @@ void closeSdl();
 void showEndImageAndSetGameOver();
 void createApple();
 bool gGameOver;
-bool gAppleExists;
 bool getsApple(struct Worm);
+struct Worm* worm_initialize();
 struct Worm* worm_getTail(struct Worm*);
 void initializeColors();
 
-enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
-enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 100 };
-enum Directions { LEFT, UP, RIGHT, DOWN };
-
 const int GamePieceLength = 5;
-
-struct Color
-{
-	Uint8 red;
-	Uint8 green;
-	Uint8 blue;
-};
-
-enum TileContent {
-	Empty = 0,
-	Fruit = 1,
-	WormTile = 2
-};
-
-struct Location {
-	int x;
-	int y;
-};
-
-struct Worm
-{
-	struct Location location;
-	enum Direction direction;
-	struct Worm* next;
-	struct Worm* previous;
-};
-
-struct Apple
-{
-	struct Location location;
-};
-
 struct Color gBackgroundColor, gWormColor, gFruitColor;
-
 struct Apple gApple;
-
 int gScore;
 
 SDL_Window* gWindow = NULL;
@@ -77,42 +40,14 @@ int main(int argc, char* argv[])
 	}
 
 	gGameOver = false;
+	gApple.exists = false;
 
 	initializeColors();
 
 	bool quit = false;
 	SDL_Event e;
-
-	// initial position
-	struct Worm* worm = NULL;
-
-	worm = (struct Worm*)malloc(sizeof(struct Worm));
-
-	srand(time(NULL));
-	int maxX = GRID_WIDTH - 1;
-	worm->location.x = rand() % (maxX + 1);
-	int maxY = GRID_HEIGHT - 4;
-	worm->location.y = rand() % (maxY + 1);
-
-	if (worm->location.x > (GRID_WIDTH / 2)) {
-		worm->direction = LEFT;
-	}
-	else {
-		worm->direction = RIGHT;
-	}
-
-	worm->previous = NULL;
-
-
-	struct Worm* tail = NULL;
-	tail = (struct Worm*)malloc(sizeof(struct Worm));
-	tail->direction = worm->direction;
-	tail->location.x = worm->location.x + 1;
-	tail->location.y = worm->location.y;
-	tail->next = NULL;
-	tail->previous = worm;
-	worm->next = tail;
-	gAppleExists = false;
+	
+	struct Worm* worm = worm_initialize();
 
 	// initialize grid
 	initializeGameGrid();
@@ -120,9 +55,8 @@ int main(int argc, char* argv[])
 	while (!quit) {
 		SDL_Delay(7);
 		if (!gGameOver) {
-			if (!gAppleExists) {
-				createApple();
-				gAppleExists = true;
+			if (!gApple.exists) {
+				createApple();				
 			}
 
 			worm_updateLocation(worm, worm->location);
@@ -259,7 +193,7 @@ void worm_updateLocation(struct Worm* worm, struct Location previousLocation)
 
 		if (getsApple(*worm)) {
 			gScore += 10;
-			gAppleExists = false;
+			gApple.exists = false;
 			struct Worm* currentTail = worm_getTail(worm);
 
 			struct Worm* newTail = NULL;
@@ -333,7 +267,7 @@ void updateGrid(struct Worm* worm) {
 		// clear worm's tail's tile
 		gGameGrid[tail->location.x][tail->location.y] = Empty;
 
-		if (!gAppleExists) {
+		if (!gApple.exists) {
 			for (int i = gApple.location.x; i < gApple.location.x + 3; i++) {
 				for (int j = gApple.location.y; j < gApple.location.y + 3; j++) {
 					gGameGrid[i][j] = Empty;
@@ -395,6 +329,8 @@ void createApple()
 			gGameGrid[i][j] = Fruit;
 		}
 	}
+
+	gApple.exists = true;
 }
 
 void initializeColors() {
@@ -409,6 +345,36 @@ void initializeColors() {
 	gFruitColor.red = 255;
 	gFruitColor.green = 10;
 	gFruitColor.blue = 10;
+}
+
+struct Worm* worm_initialize() {
+	struct Worm* worm = (struct Worm*)malloc(sizeof(struct Worm));
+
+	srand(time(NULL));
+	int maxX = GRID_WIDTH - 1;
+	worm->location.x = rand() % (maxX + 1);
+	int maxY = GRID_HEIGHT - 4;
+	worm->location.y = rand() % (maxY + 1);
+
+	if (worm->location.x > (GRID_WIDTH / 2)) {
+		worm->direction = LEFT;
+	}
+	else {
+		worm->direction = RIGHT;
+	}
+
+	worm->previous = NULL;
+
+	struct Worm* tail = NULL;
+	tail = (struct Worm*)malloc(sizeof(struct Worm));
+	tail->direction = worm->direction;
+	tail->location.x = worm->location.x + 1;
+	tail->location.y = worm->location.y;
+	tail->next = NULL;
+	tail->previous = worm;
+	worm->next = tail;
+
+	return worm;
 }
 
 bool getsApple(struct Worm worm) {
