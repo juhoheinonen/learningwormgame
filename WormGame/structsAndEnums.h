@@ -39,4 +39,4 @@ struct Apple
 enum PixelDimensions { SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600 };
 enum GridDimensions { GRID_WIDTH = 160, GRID_HEIGHT = 100 };
 enum Directions { LEFT, UP, RIGHT, DOWN };
-enum MoveResult { EMPTY, FRUIT, COLLISION };
+typedef enum { EMPTY, FRUIT, COLLISION } MOVE_RESULT;
